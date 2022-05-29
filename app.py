@@ -19,6 +19,7 @@ from dateutil import parser
 
 #----------------------------------------------------------------------------#
 # App Config.
+
 #----------------------------------------------------------------------------#
 
 app = Flask(__name__)
@@ -50,6 +51,9 @@ class Venue(db.Model):
     website_link = db.Column(db.String(),nullable=False)
     seeking_description = db.Column(db.String(),nullable=True)
     relations = db.relationship('Show', backref='venue', lazy=True)
+
+    def __repr__(self):
+        return f'<Venue {self.id} {self.name} {self.city} {self.state}>'
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate-- done
 
@@ -208,6 +212,7 @@ def show_venue(venue_id):
     print(sys.exc_info())
   finally:
      data = list(filter(lambda d: d['id'] == venue_id, data))[0]
+     print(data)
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -269,11 +274,22 @@ def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using --done
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   try:
-    venue = Venue.query.get(venue_id)
-    #  add the query to the session transaction 
-    db.session.delete(venue)
-    # commit it successfully to the database for persistent storage
-    db.session.commit()
+    venue = Venue.query.with_entities(Venue.name).filter_by(id=venue_id).first()
+    # query shows table to find all the shows at that venue_id
+    show = Show.query.filter_by(venue_id=venue_id).all()
+    #if shows have such venue first delete them to prevent break in the app
+    # if no shows, delete the venue from the db.venues table and flash the success message
+    if len(show) == 0:
+      print(1)
+      Venue.query.filter_by(id=venue_id).delete()
+      db.session.commit()
+      # on successful db insert, flash success
+      flash('Venue ' + venue.name + ' was successfully deleted!')
+    if len(show) > 0:
+      print(2)
+      Show.query.filter_by(venue_id=venue_id).delete()
+      Venue.query.filter_by(id=venue_id).delete()
+      db.session.commit()
     # flash success note to the frontend
     flash('Venue ' + venue.name + ' was successfully deleted!')
   except: 
@@ -285,7 +301,10 @@ def delete_venue(venue_id):
 
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-  return render_template('/pages/home.html')
+  # Note we gonna use fetch method in the frontend , hence the redirect to homepage is not necessary
+  #  We will return a success message to the frontend
+  # return render_template('pages/home.html')
+  return {'success': True}
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -294,7 +313,7 @@ def artists():
   # TODO: replace with real data returned from querying the database --done
   needed_fields =[Artist.id,Artist.name]
 
-  data = Artist.query.values(*needed_fields)
+  data = Artist.query.with_entities(*needed_fields)
  
   return render_template('pages/artists.html', artists=data)
 
@@ -303,16 +322,40 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
-  }
+  response = {}
+  try:
+    # get the query string from  the request
+    query_string = request.form.get('search_term')
+    # get the data from the db
+    data = Artist.query.filter(Artist.name.ilike('%' + query_string + '%')).all()
+    # get the data in the needed format
+    response['count'] = len(data)
+    response['data'] = []
+    for d in data:
+      response.get('data').append({'id':d.id, 'name':d.name})
+      # determine the number of upcoming shows for each artist
+      shows = Show.query.filter(Show.artist_id == d.id).all()
+      # if returned shows are not empty, shows for artist is obviously 0
+      if len(shows) == 0:
+        response.get('data')[-1]['num_upcoming_shows'] = 0
+      else:
+        for show in shows:
+         count = 0
+         if show.start_time > datetime.now():
+          count += 1
+          response.get('data')[-1]['num_upcoming_shows'] = count
+  except:
+     print(sys.exc_info())
+  finally:
+    db.session.close()
+    print(response)
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
+
+  
+
+
+  
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
@@ -335,14 +378,14 @@ def show_artist(artist_id):
   query_show_for_shows = Show.query.filter_by(artist_id=artist_id).all()
   for allshows in query_show_for_shows:
     if allshows.start_time > datetime.now():
-      data['past_shows'].append({
+      data['upcoming_shows'].append({
         "venue_id": allshows.venue_id,
         "venue_name": allshows.venue.name,
         "venue_image_link": allshows.venue.image_link,
         "start_time": str(allshows.start_time)
       })
     else:
-      data['upcoming_shows'].append({
+      data['past_shows'].append({
         "venue_id": allshows.venue_id,
         "venue_name": allshows.venue.name,
         "venue_image_link": allshows.venue.image_link,

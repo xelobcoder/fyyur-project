@@ -77,28 +77,36 @@
 
 <section>
 	<a href="/venues/{{ venue.id }}/edit"><button class="btn btn-primary btn-lg">Edit</button></a>
-	<button id="delete" data-id={{venue.id}} class="btn btn-delete">delete</button>
+	<a><button type="submit" class="btn btn-warning btn-lg" data-id={{venue.id}} id="deletebutton">Delete</button></a>
+	<script>
+		// grap button from the DOM using the get id interface
+		const  deletebutton =document.getElementById("deletebutton");
+
+		// attach a click listen to the delete button
+
+		deletebutton.addEventListener("click", (e) => {
+            // get venue id
+			let dataid = e.target.getAttribute("data-id");
+		
+			// api end point below
+
+		  const Api_Endpoint = `/venues/${dataid}/delete`;
+			// make a fetch request to the delete route
+
+			fetch(Api_Endpoint, {
+				method: "DELETE"
+			}).then(res => res.json()).then(data => {
+				// redirect to the index page
+				console.log(data)
+				window.location.href = "/";
+			}).catch(err => {
+				console.log(err);
+			});
+		})
+
+		
+	</script>
 </section>
-<script>
-    const getid = document.getElementById('delete');
-	const getdataID = getid.getAttribute("data-id");
 
-	fetch(`/venues/8`, {
-		method: 'DELETE',
-		headers: {
-			'Content-Type': 'application/json',
-		}
-	})
-	.then ( (t) => {
-		return t.json();
-	})
-	.then ( (t) => {
-		console.log(t);
-	})
-	.catch ( (err) => {
-		console.log(err);
-	})
-
-</script>
 {% endblock %}
 
