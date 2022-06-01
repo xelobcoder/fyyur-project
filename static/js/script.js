@@ -21,10 +21,13 @@ if (baseurl == "http://127.0.0.1:5000/") {
   let API_ENDPOINT = '/recently-listed-artist';
 
 
+  
+
+
   // create our dom elements for appending
 
 
-  let createDomElements = (data,container) => {
+  let createDomElements = (data) => {
     // check if the data is an array 
     let isArray = Array.isArray(data) ? true : false;
     if (isArray && data.length > 0) {
@@ -34,7 +37,7 @@ if (baseurl == "http://127.0.0.1:5000/") {
            <div class ="col-sm-3">
               <div class="tile tile-show">
                   <img src="${element.artist_image_link}" alt="Artist Image" />
-                  <h5><a href="/artists/${element.artist.id}">${name}</a></h5>
+                  <h5><a href="/artists/${element.artist_id}">${element.artist_name}</a></h5>
                   <p>upcoming shows: ${element.upcoming_shows}</p>
               </div>
            </div> 
@@ -42,7 +45,13 @@ if (baseurl == "http://127.0.0.1:5000/") {
          }
           return htmlDoc();
       }).join("");
+      let container = document.getElementById("recently-listed-artist");
       container.innerHTML = DOM;
+    } else{
+      // do not display recent shows
+      let head_display = document.querySelectorAll("#listed-head")[0];
+
+      head_display.style.display = 'none';
     }
   }
 
@@ -61,18 +70,17 @@ if (baseurl == "http://127.0.0.1:5000/") {
     return response.json();
   })
   .then( (data )=> {
-    let container = document.getElementById("recently-listed-artist");
-    createDomElements(data,container);
+    createDomElements(data);
   })
   .catch ( (err) => {
     console.log(err);
   })
+ 
 
-  // get the data from the recently linked venues API
+  // get the data from the API
+  let API_ENDPOINT_2 = '/recently-listed-venue';
 
-  let API_ENDPOINT_venue = '/recently-listed-venue';
-
-  fetchData_venue = fetch(API_ENDPOINT_venue,{
+  fetchData_venue = fetch(API_ENDPOINT_2,{
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
@@ -80,12 +88,35 @@ if (baseurl == "http://127.0.0.1:5000/") {
   })
 
   // parse the data
-
   fetchData_venue.then ( response => {
     return response.json();
   }
+
   ).then( (data )=> {
-    createDomElements(data,"venue","venue","img","container");
+    if(Array.isArray(data) && data.length > 0){
+      let DOM = data.map(element => {
+        let htmlDoc = function(){
+          return (`
+          <div class ="col-sm-3">
+             <div class="tile tile-show">
+                 <img src="${element.venue_image_link}" alt="Venue Image" />
+                 <h5><a href="/venues/${element.venue_id}">${element.venue_name}</a></h5>
+                 <p>upcoming shows: ${element.upcoming_shows}</p>
+             </div>
+          </div> 
+          `)
+        }
+         return htmlDoc();
+     }).join("");
+     let container = document.getElementById("recently-listed-venue");
+      container.innerHTML = DOM;
+    } else {
+      // do not display recently listed venues
+
+      let container = document.querySelectorAll("#listed-head")[1];
+
+      container.style.display = "none";
+    }
   }
   ).catch ( (err) => {
     console.log(err);

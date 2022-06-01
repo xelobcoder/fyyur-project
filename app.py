@@ -578,6 +578,23 @@ def recently_linked_shows():
   return jsonify(data)
 
 
+@app.route('/recently-listed-venue', methods=['GET'])
+def recently_listed_venue():
+  # get the most recent venues from the database
+  data = []
+  recent_venues = Venue.query.order_by(Venue.id.desc()).limit(10)
+  for all in recent_venues:
+    data.append({
+      "venue_id": all.id,
+      "venue_name": all.name,
+      "venue_image_link": all.image_link,
+      "upcoming_shows": len(Show.query.filter_by(venue_id = all.id).filter(Show.start_time > datetime.now()).all()),
+    })
+  return jsonify(data)
+
+
+
+
 #  Shows
 #  ----------------------------------------------------------------
 
