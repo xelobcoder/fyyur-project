@@ -14,6 +14,7 @@ from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
+from sqlalchemy import null
 from forms import *
 import json
 
@@ -46,8 +47,8 @@ class Venue(db.Model):
     phone = db.Column(db.String(120),nullable=False)
     image_link = db.Column(db.String(500),nullable=False)
     facebook_link = db.Column(db.String(),nullable=False)
-    seeking_talent = db.Column(db.Boolean, default=False)
-    genres = db.Column(db.String(),nullable=False)
+    seeking_talent = db.Column(db.Boolean,nullable=False,default=False)
+    genres = db.Column(db.ARRAY(db.String),nullable=False)
     website_link = db.Column(db.String(),nullable=False)
     seeking_description = db.Column(db.String(),nullable=True)
     relations = db.relationship('Show', backref='venue', lazy=True)
@@ -65,12 +66,12 @@ class Artist(db.Model):
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genres = db.Column(db.String(),nullable = False)
+    genres = db.Column(db.ARRAY(db.String),nullable = False)
     image_link = db.Column(db.String(),nullable = False)
     facebook_link = db.Column(db.String(),nullable=False)
     website_link = db.Column(db.String(),nullable=False)
     seeking_description = db.Column(db.String(),nullable = False)
-    seeking_venue = db.Column(db.Boolean, default=False)
+    seeking_venue = db.Column(db.Boolean,nullable = False,default = False)
     relations = db.relationship('Show', backref='artist', lazy=True)
 
 class Show(db.Model):
@@ -187,7 +188,7 @@ def show_venue(venue_id):
     data.append({
       'id': venue_id,
       'name': venue_results.name,
-      'genres': venue_results.genres.split(','),
+      'genres': venue_results.genres,
       'address': venue_results.address,
       'city': venue_results.city,
       'state': venue_results.state,
@@ -248,14 +249,7 @@ def create_venue_submission():
     state = request.form['state']
     address = request.form['address']
     phone = request.form['phone']
-    def genres():
-      genre = ''
-      data = request.form.getlist('genres')
-      for t in data:
-        genre += t + ','
-      print(genre)
-      return genre
-    genres = genres()
+    genres = request.form.getlist('genres')
     image_link = request.form['image_link']
     website_link = request.form['website_link']
     facebook_link = request.form['facebook_link']
@@ -379,7 +373,7 @@ def show_artist(artist_id):
   data['city'] = artist_information.city
   data['state'] = artist_information.state
   data['phone'] = artist_information.phone
-  data['genres'] = artist_information.genres.split(',')
+  data['genres'] = artist_information.genres
   data['website_link'] = artist_information.website_link
   data['facebook_link'] = artist_information.facebook_link
   data['seeking_venue'] = artist_information.seeking_venue
@@ -433,13 +427,6 @@ def edit_artist_submission(artist_id):
     artist.phone = request.form.get('phone')
     artist.genres = request.form.get('genres')
     artist.website_link = request.form.get('website_link')
-    def genres():
-      genre = ''
-      data = request.form.getlist('genres')
-      for t in data:
-        genre += t + ','
-      return genre
-    artist.genres = genres()
     artist.facebook_link = request.form.get('facebook_link')
     artist.seeking_description = request.form.get('seeking_description')
     artist.image_link = request.form.get('image_link')
@@ -475,26 +462,17 @@ def edit_venue_submission(venue_id):
   # venue record with ID <venue_id> using the new attributes
   try:
     edit_current_venue = Venue.query.get(venue_id)
-    edit_current_venue.name = request.form['name']
-    edit_current_venue.city = request.form['city']
-    edit_current_venue.state = request.form['state']
-    edit_current_venue.phone = request.form['phone']
-    edit_current_venue.address = request.form['address']
-    # this function would loop through the genres and concantenate them into a string for 
-    # 
-    def genres():
-      genre = ''
-      data = request.form.getlist('genres')
-      for t in data:
-        genre += t + ','
-      return genre
-    edit_current_venue.genres =  genres()
-    
+    edit_current_venue.name = request.form.get('name')
+    edit_current_venue.city = request.form.get('city')
+    edit_current_venue.state = request.form.get('state')
+    edit_current_venue.address = request.form.get('address')
+    edit_current_venue.phone = request.form.get('phone')
+    edit_current_venue.genres = request.form.getlist('genres')
     edit_current_venue.facebook_link = request.form['facebook_link']
     edit_current_venue.image_link = request.form['image_link']
     edit_current_venue.website_link = request.form['website_link']
     def seekvalues():
-      if request.form['seeking_talent'] == 'y':
+      if request.form.get('seeking_talent') == 'y':
         return True
       else:
         return False
@@ -525,27 +503,21 @@ def create_artist_submission():
   # TODO: insert form data as a new Venue record in the db, instead --done
   # TODO: modify data to be the data object returned from db insertion --done
   try:
-    name = request.form['name']
-    city = request.form['city']
-    state = request.form['state']
-    phone = request.form['phone']
-    def get_genres():
-      genre = ''
-      data = request.form.getlist('genres')
-      for t in data:
-        genre += t + ','
-      return genre
-    genres = get_genres()
-    facebook_link = request.form['facebook_link']
-    image_link = request.form['image_link']
-    website_link = request.form['website_link']
+    name = request.form.get('name')
+    city = request.form.get('city')
+    state = request.form.get('state')
+    phone = request.form.get('phone')
+    genres = request.form.getlist('genres')
+    facebook_link = request.form.get('facebook_link')
+    image_link = request.form.get('image_link')
+    website_link = request.form.get('website_link')
     def seeking_venue():
-      if request.form['seeking_venue'] == 'y':
+      if request.form.get('seeking_venue') == 'y':
         return True
       else:
         return False
     seeking_venue = seeking_venue()
-    seeking_description = request.form['seeking_description']
+    seeking_description = request.form.get('seeking_description')
     artist = Artist(name=name, city=city, state=state, phone=phone, genres=genres, facebook_link=facebook_link, image_link=image_link, website_link=website_link, seeking_venue=seeking_venue, seeking_description=seeking_description)
     db.session.add(artist)
     db.session.commit()
