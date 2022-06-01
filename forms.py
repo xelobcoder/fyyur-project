@@ -129,7 +129,6 @@ class VenueForm(Form):
     seeking_description = StringField(
         'seeking_description'
     )
-    submit = SubmitField(label=('Submit'))
 
 
 
@@ -230,16 +229,16 @@ class ArtistForm(Form):
      )
     facebook_link = StringField(
         # TODO implement enum restriction
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[DataRequired(),URL(True,message='Please enter a valid URL.')]
      )
 
     website_link = StringField(
-        'website_link'
+        'website_link',validators=[DataRequired(),URL(True,message='Please enter a valid URL.')]
      )
 
     seeking_venue = BooleanField( 'seeking_venue' )
 
     seeking_description = StringField(
-            'seeking_description'
+            'seeking_description',validators=[DataRequired(),Length(min=1, max=100, message="Please enter a valid description.")]
      )
   

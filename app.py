@@ -7,7 +7,7 @@ import json
 import sys
 import dateutil.parser
 import babel
-from flask import Flask, render_template,jsonify, request, Response, flash, redirect, url_for
+from flask import Flask, render_template,jsonify, request, Response, flash, redirect, session, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -484,7 +484,8 @@ def create_artist_submission():
     # TODO: on unsuccessful db insert, flash an error instead.
     flash('An error occurred. Artist ' + artist_name + ' could not be listed.')
   finally:
-   return render_template('pages/home.html')
+    db.session.close()
+  return render_template('pages/home.html')
 
 
 # shows the recently linked shows at the homepage
@@ -569,10 +570,30 @@ def create_show_submission():
     artist_id = data['artist_id']
     venue_id = data['venue_id']
     start_date = data['start_time']
-    shows = Show(artist_id=artist_id, venue_id=venue_id, start_time=start_date)
-    db.session.add(shows)
+    # filter vernue table if id exixt
+
+    isVenue = db.session.query(Venue).filter_by(id=venue_id).first()
+    isArtist = db.session.query(Artist).filter_by(id=artist_id).first()
+    
+    #check if venue and artist exist
+    if isVenue is None:
+      flash('venue with id ' + venue_id + ' does not exist')
+      return render_template('pages/home.html')
+    
+    if isArtist is None:
+      flash('artist with id ' + artist_id + ' does not exist')
+      return render_template('pages/home.html')
+    
+    if isArtist is None and isVenue is None:
+      flash('venue and artist dose not exist, create an artist profile and venue profile first')
+      return render_template('pages/home.html')
+    
+    # create a new show
+    new_show = Show(artist_id=artist_id, venue_id=venue_id, start_time=start_date)
+    db.session.add(new_show)
     db.session.commit()
     # on successful db insert, flash success
+
     flash('Show was successfully listed!')
   except:
     db.session.rollback()
