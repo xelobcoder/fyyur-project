@@ -3,7 +3,7 @@ from email.policy import default
 from re import RegexFlag
 from time import time
 from flask_wtf import Form
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
+from wtforms import StringField,SubmitField,SelectField, SelectMultipleField, DateTimeField, BooleanField
 from wtforms.validators import DataRequired,Regexp,Length, AnyOf, URL
 
 class ShowForm(Form):
@@ -93,7 +93,7 @@ class VenueForm(Form):
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
-        'genres', validators=[DataRequired(Length(min=1, max=18, message="Please select at least one genre."))],
+        'genres', validators=[DataRequired(),Length(min=1, max=18, message="Please select at least one genre.")],
         choices=[
             ('Alternative', 'Alternative'),
             ('Blues', 'Blues'),
@@ -117,10 +117,11 @@ class VenueForm(Form):
         ]
     )
     facebook_link = StringField(
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[URL(True,message='Please enter a valid URL.')]
     )
     website_link = StringField(
-        'website_link'
+        'website_link',
+        validators=[DataRequired(),URL(True,message='Please enter a valid URL.')]
     )
 
     seeking_talent = BooleanField( 'seeking_talent' )
@@ -128,6 +129,7 @@ class VenueForm(Form):
     seeking_description = StringField(
         'seeking_description'
     )
+    submit = SubmitField(label=('Submit'))
 
 
 
