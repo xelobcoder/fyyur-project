@@ -1,6 +1,6 @@
 from datetime import datetime
+from email import message
 from email.policy import default
-from re import RegexFlag
 from time import time
 from flask_wtf import Form
 from wtforms import StringField,SubmitField,SelectField, SelectMultipleField, DateTimeField, BooleanField
@@ -8,10 +8,10 @@ from wtforms.validators import DataRequired,Regexp,Length, AnyOf, URL
 
 class ShowForm(Form):
     artist_id = StringField(
-        'artist_id'
+        'artist_id', validators=[DataRequired()]
     )
     venue_id = StringField(
-        'venue_id'
+        'venue_id',validators=[DataRequired()]
     )
     start_time = DateTimeField(
         'start_time',
@@ -86,14 +86,14 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone', validators=([DataRequired(), Regexp(r'^[0-9]{3}-[0-9]{3}-[0-9]{4}$', message="Phone number must be in the format: xxx-xxx-xxxx")])
     )
     image_link = StringField(
-        'image_link'
+        'image_link',validators=([DataRequired(),Regexp(r'^(http|https):\/\/.*\.(png|jpg|jpeg|gif)$', message="Image link must be a valid URL")])
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
-        'genres', validators=[DataRequired(),Length(min=1, max=18, message="Please select at least one genre.")],
+        'genres', validators=[DataRequired(),Length(min=1, max=20, message="Please select at least one genre.")],
         choices=[
             ('Alternative', 'Alternative'),
             ('Blues', 'Blues'),
@@ -117,11 +117,11 @@ class VenueForm(Form):
         ]
     )
     facebook_link = StringField(
-        'facebook_link', validators=[URL(True,message='Please enter a valid URL.')]
+        'facebook_link', validators=[DataRequired(),Regexp(r'^(http|https):\/\/.*$'.lstrip(), message="Facebook link must be a valid URL")]
     )
     website_link = StringField(
         'website_link',
-        validators=[DataRequired(),URL(True,message='Please enter a valid URL.')]
+        validators=[DataRequired(),Regexp(r'^(http|https):\/\/.*$'.lstrip(), message="Website link must be a valid URL")]
     )
 
     seeking_talent = BooleanField( 'seeking_talent' )
@@ -197,11 +197,11 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # TODO implement validation logic for state
-        'phone',validators= [ DataRequired(Regexp(r'^[0-9]{3}-[0-9]{3}-[0-9]{4}$', message='Phone number must be in the format: xxx-xxx-xxxx,only numbers are accepted'))]
+        'phone',validators= [ DataRequired(),Regexp(r'^[0-9]{3}-[0-9]{3}-[0-9]{4}$',message='Please enter a valid phone number.')]
 
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[DataRequired(), Regexp(r'^(http|https):\/\/.*\.(png|jpg|jpeg|gif)$', message="Image link must be a valid URL")]
     )
     genres = SelectMultipleField(
         'genres', validators=[DataRequired()],
@@ -229,11 +229,11 @@ class ArtistForm(Form):
      )
     facebook_link = StringField(
         # TODO implement enum restriction
-        'facebook_link', validators=[DataRequired(),URL(True,message='Please enter a valid URL.')]
+        'facebook_link', validators=[DataRequired(),Regexp(r'^(http|https):\/\/.*$'.lstrip(), message="Facebook link must be a valid URL")]
      )
 
     website_link = StringField(
-        'website_link',validators=[DataRequired(),URL(True,message='Please enter a valid URL.')]
+        'website_link',validators=[DataRequired(), Regexp(r'^(http|https):\/\/.*$'.lstrip(), message="Website link must be a valid URL")]
      )
 
     seeking_venue = BooleanField( 'seeking_venue' )
